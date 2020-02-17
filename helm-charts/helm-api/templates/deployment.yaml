@@ -1,0 +1,292 @@
+# Licensed Materials - Property of IBM
+# (C) Copyright IBM Corporation 2016, 2019. All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication or disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helm-api
+  labels:
+    app: helm-api
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: "{{ .Release.Service }}"
+    release: "{{ .Release.Name }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+    app.kubernetes.io/name: "helm-api"
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: helm-api
+  template:
+    metadata:
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: docker/default
+        productName: "IBM Multicloud Manager"
+        productID: "5737-E67"
+        productVersion: "3.2.1"
+      labels:
+        app: helm-api
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        heritage: "{{ .Release.Service }}"
+        release: "{{ .Release.Name }}"
+        app.kubernetes.io/instance: "{{ .Release.Name }}"
+        app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+        app.kubernetes.io/name: "helm-api"
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      securityContext:
+        runAsNonRoot: true
+        {{- if not (.Capabilities.APIVersions.Has "security.openshift.io/v1") }} 
+        runAsUser: {{ .Values.runAsUser }}
+        {{- end }} 
+      nodeSelector:
+        master: "{{ .Values.nodeSelector.master }}"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: beta.kubernetes.io/arch
+                  operator: In
+                  values:
+                  {{- if .Values.arch }}
+                  - {{ .Values.arch }}
+                  {{- else }}
+                  - {{ template "helmapi.arch" . }}
+                  {{- end }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      containers:
+      {{ if .Values.auditService.config.enabled }}
+      - name: {{ .Values.auditService.name }}
+        image: "{{ .Values.auditService.image.repository }}:{{ .Values.auditService.image.tag }}"
+        imagePullPolicy: {{ .Values.auditService.image.pullPolicy }}
+        securityContext:
+          seLinuxOptions:
+            type: spc_t
+          runAsNonRoot: true
+          {{- if not (.Capabilities.APIVersions.Has "security.openshift.io/v1") }}
+          runAsUser: {{ .Values.runAsUser }}
+          {{- end }}
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: journal
+          mountPath: "/run/systemd/journal"
+        - name: shared
+          mountPath: "/var/log/audit"
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      {{ end }}
+      
+      - name: {{ .Values.rudder.image.name }}
+        image: "{{ .Values.rudder.image.repository }}:{{ .Values.rudder.image.tag }}"
+        imagePullPolicy: "{{ .Values.rudder.image.pullPolicy }}"
+        ports:
+        - containerPort: {{ .Values.rudder.ports.containerPort }}
+          name: "{{ .Values.rudder.ports.containerPortName }}"
+          protocol: "{{ .Values.rudder.ports.protocol }}"
+        securityContext:
+          runAsNonRoot: true
+          {{- if not (.Capabilities.APIVersions.Has "security.openshift.io/v1") }}
+          runAsUser: {{ .Values.runAsUser }}
+          {{- end }}
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          tcpSocket:
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: "api/v1/readycheck"
+            scheme: HTTP
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 15
+          failureThreshold: 5
+        env:
+        - name: RUDDER_TILLER_ADDRESS
+          value: "{{ .Values.rudder.env.RUDDER_TILLER_ADDRESS }}"
+        - name: RUDDER_CLIENT_CERTS
+          value: "{{ .Values.rudder.env.RUDDER_CLIENT_CERTS }}"
+        - name: USE_TLS
+          value: "{{ .Values.rudder.env.USE_TLS }}"
+        volumeMounts:
+        - name: "{{ .Values.rudder.volumeMounts.rudderCertsName }}"
+          mountPath: "{{ .Values.rudder.volumeMounts.rudderCertsMountPath }}"
+        - name: "{{ .Values.rudder.volumeMounts.rudderCacheName }}"
+          mountPath: "{{ .Values.rudder.volumeMounts.rudderCacheMountPath }}"
+        resources:
+{{ toYaml .Values.rudder.resources | indent 10 }}
+
+      - name: {{ .Values.helmapi.image.name }}
+        image: "{{ .Values.helmapi.image.repository }}:{{ .Values.helmapi.image.tag }}"
+        imagePullPolicy: {{ .Values.helmapi.image.pullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          {{- if not (.Capabilities.APIVersions.Has "security.openshift.io/v1") }}
+          runAsUser: {{ .Values.runAsUser }}
+          {{- end }}
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: "api/v2/livecheck"
+            scheme: HTTP
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: "api/v2/readycheck"
+            scheme: HTTP
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 15
+          failureThreshold: 5
+        volumeMounts:
+        - name: {{ .Values.helmapi.volumeMounts.mongoCaName}}
+          mountPath: {{ .Values.helmapi.volumeMounts.mongoCaMountPath}}
+        - name: {{ .Values.helmapi.volumeMounts.mongoClientCertName}}
+          mountPath: {{ .Values.helmapi.volumeMounts.mongoClientCertMountPath}}
+        - name: {{ .Values.helmapi.volumeMounts.helmApiCertsName}}
+          mountPath: {{ .Values.helmapi.volumeMounts.helmApiCertsMountPath}}
+        - name: {{ .Values.helmapi.sharedassets.name }}
+          mountPath: {{ .Values.helmapi.sharedassets.path }}
+        {{ if .Values.auditService.config.enabled }}
+        - name: shared
+          mountPath: "/var/log/audit"
+        {{ end }}
+
+        resources:
+{{ toYaml .Values.helmapi.resources | indent 10 }}
+        ports:
+        - containerPort: {{ .Values.helmapi.service.port }}
+          name: {{ .Values.helmapi.service.name }}
+        env:
+        - name: DBHOST
+          value: "{{ .Values.helmapi.env.DBHOST }}"
+        - name: DBPORT
+          value: "{{ .Values.helmapi.env.DBPORT }}"
+        - name: DBUSER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.helmapi.secretKeyRef.dbSecretName}}
+              key: {{ .Values.helmapi.secretKeyRef.dbSecretUserKey}}
+        - name: DBPASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.helmapi.secretKeyRef.dbSecretName}}
+              key: {{ .Values.helmapi.secretKeyRef.dbSecretPassKey}}
+        - name: MONGO_ISSSL
+          value: "{{ .Values.helmapi.env.MONGO_ISSSL }}"
+        - name: MONGO_SSL_CA
+          value: "{{ .Values.helmapi.env.MONGO_SSL_CA }}"
+        - name: MONGO_SSL_CERT
+          value: "{{ .Values.helmapi.env.MONGO_SSL_CERT }}"
+        - name: MONGO_SSL_KEY
+          value: "{{ .Values.helmapi.env.MONGO_SSL_KEY }}"
+        - name: ISICP
+          value: "{{ .Values.helmapi.env.ISICP }}"
+        - name: CLUSTER_URL
+          value:  "https://icp-management-ingress:{{ .Values.helmapi.env.CLUSTER_PORT }}"
+        - name: CLUSTER_PORT
+          value: "{{ .Values.helmapi.env.CLUSTER_PORT }}"
+        - name: WLP_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.helmapi.secretKeyRef.clientIdSecretName}}
+              key: {{ .Values.helmapi.secretKeyRef.clientIdSecretKey}}
+        - name: WLP_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.helmapi.secretKeyRef.clientSecretSecretName}}
+              key: {{ .Values.helmapi.secretKeyRef.clientSecretSecretKey}}
+        - name: cfcRouterUrl
+          value: "https://icp-management-ingress:{{ .Values.helmapi.env.CLUSTER_PORT }}"
+        - name: WLP_REDIRECT_URL
+          value: "{{ .Values.helmapi.env.WLP_REDIRECT_URL }}"
+        - name: HTTP_PROXY
+          value: "{{ .Values.helmapi.env.HTTP_PROXY }}"
+        - name: HTTPS_PROXY
+          value: "{{ .Values.helmapi.env.HTTPS_PROXY }}"
+        - name: NO_PROXY
+          value: "{{ .Values.helmapi.env.NO_PROXY }}"
+        - name: PROXY_EXTERNAL_ADDR
+          value: "{{ .Values.helmapi.env.PROXY_EXTERNAL_ADDR }}"
+        - name: PROXY_ROUTE
+          value: "{{ .Values.helmapi.env.PROXY_ROUTE }}"
+        - name: LOAD_ROUTES
+          value: "{{ .Values.helmapi.env.LOAD_ROUTES }}"
+        - name: PORT
+          value: "{{ .Values.helmapi.service.port }}"
+        - name: "CLUSTER_CA_DOMAIN"
+          value: "{{ .Values.helmapi.env.CLUSTER_CA_DOMAIN }}"
+        - name: SET_TLS
+          value: "{{ .Values.helmapi.env.SET_TLS }}"
+        - name: SERVICE_NAME
+          value: {{ .Values.helmapi.image.name }}
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          value: {{ .Release.Namespace }}
+
+      volumes:
+      - name: {{ .Values.volumes.mongoClientCertName }}
+        secret:
+          secretName: {{ .Values.volumes.mongoClientCertSecretName }}
+      - name: {{ .Values.volumes.mongoCaCertName }}
+        secret:
+          secretName: {{ .Values.volumes.mongoCaCertSecretName }}
+      - name: {{ .Values.volumes.helmApiCertsName }}
+        secret:
+          secretName: {{ .Values.volumes.helmApiCertsSecretName }}
+      - name: {{ .Values.volumes.rudderCertsName }}
+        secret:
+          secretName: {{ .Values.volumes.rudderCertsSecretName }}
+      - name: sharedassets
+        emptyDir: {}
+      - name: {{ .Values.rudder.volumeMounts.rudderCacheName }}
+        emptyDir: {}
+      {{ if .Values.auditService.config.enabled }}
+      - name: journal
+        hostPath:
+          path: /run/systemd/journal
+      - name: shared
+        emptyDir: {}
+      {{ end }}

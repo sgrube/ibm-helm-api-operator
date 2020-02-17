@@ -1,0 +1,116 @@
+apiVersion: charts.helm.k8s.io/v1alpha1
+kind: HelmApi
+metadata:
+  name: example-helmapi
+spec:
+  # Default values copied from <project_dir>/helm-charts/helm-api/values.yaml
+  
+  arch: ""
+  auditService:
+    config:
+      enabled: true
+    image:
+      pullPolicy: IfNotPresent
+      repository: ibmcom/icp-audit-service
+      tag: 3.3.1
+    name: icp-audit-service
+  helmapi:
+    env:
+      CLUSTER_CA_DOMAIN: mycluster.icp
+      CLUSTER_PORT: 8443
+      DBHOST: mongodb
+      DBPORT: "27017"
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ISICP: true
+      LOAD_ROUTES: API
+      MONGO_ISSSL: true
+      MONGO_SSL_CA: /certs/mongodb-ca/tls.crt
+      MONGO_SSL_CERT: /certs/mongodb-client/tls.crt
+      MONGO_SSL_KEY: /certs/mongodb-client/tls.key
+      NO_PROXY: mycluster.icp,mongodb,platform-identity-provider,icp-management-ingress,
+        iam-pap,localhost,127.0.0.1
+      PROXY_EXTERNAL_ADDR: proxy_external_address
+      PROXY_ROUTE: helm-api
+      SET_TLS: "true"
+      WLP_REDIRECT_URL: http://localhost:3000/auth/liberty/callback
+    image:
+      name: helmapi
+      pullPolicy: IfNotPresent
+      repository: ibmcom/icp-helm-api
+      tag: 3.3.0
+    resources:
+      limits:
+        cpu: 300m
+        memory: 400Mi
+      requests:
+        cpu: 200m
+        memory: 300Mi
+    secretKeyRef:
+      clientIdSecretKey: WLP_CLIENT_ID
+      clientIdSecretName: platform-oidc-credentials
+      clientSecretSecretKey: WLP_CLIENT_SECRET
+      clientSecretSecretName: platform-oidc-credentials
+      dbSecretName: icp-mongodb-admin
+      dbSecretPassKey: password
+      dbSecretUserKey: user
+    service:
+      name: helm-api
+      port: 3000
+      portName: helmapiport
+    sharedassets:
+      name: sharedassets
+      path: /usr/src/app/assets
+    volumeMounts:
+      helmApiCertsMountPath: /etc/certs
+      helmApiCertsName: helmapi-certs
+      mongoCaMountPath: /certs/mongodb-ca
+      mongoCaName: mongodb-ca-cert
+      mongoClientCertMountPath: /certs/mongodb-client
+      mongoClientCertName: mongodb-client-cert
+  nodeSelector:
+    master: "true"
+  replicaCount: 1
+  rudder:
+    env:
+      RUDDER_CLIENT_CERTS: /etc/certs
+      RUDDER_TILLER_ADDRESS: tiller-deploy.kube-system:44134
+      USE_TLS: "true"
+    image:
+      name: rudder
+      pullPolicy: IfNotPresent
+      repository: ibmcom/icp-helm-rudder
+      tag: 3.2.2
+    ports:
+      containerPort: 5000
+      containerPortName: p5000
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 150m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    volumeMounts:
+      rudderCacheMountPath: /opt/rudder/cache
+      rudderCacheName: rudder-cache
+      rudderCertsMountPath: /etc/certs
+      rudderCertsName: rudder-certs
+  runAsUser: 65534
+  tolerations:
+  - effect: NoSchedule
+    key: dedicated
+    operator: Exists
+  - key: CriticalAddonsOnly
+    operator: Exists
+  volumes:
+    helmApiCertsName: helmapi-certs
+    helmApiCertsSecretName: helmapi-secret
+    mongoCaCertName: mongodb-ca-cert
+    mongoCaCertSecretName: cluster-ca-cert
+    mongoClientCertName: mongodb-client-cert
+    mongoClientCertSecretName: icp-mongodb-client-cert
+    rudderCertsName: rudder-certs
+    rudderCertsSecretName: rudder-secret
+  

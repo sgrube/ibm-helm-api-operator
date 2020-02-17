@@ -1,0 +1,16 @@
+apiVersion: v1
+appVersion: 4.1.0.0-000000
+description: Used to deploy the helm api into K8s cluster
+keywords:
+- IcpClusterResource
+- Commercial
+- ICP
+- IKS
+- ICPRHOCP
+- Operations
+- amd64
+- ppc64le
+- s390x
+kubeVersion: '>=1.11.0'
+name: helm-api
+version: 3.5.0

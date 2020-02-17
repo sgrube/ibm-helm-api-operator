@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ibm-helm-api-operator
+subjects:
+- kind: ServiceAccount
+  name: ibm-helm-api-operator
+roleRef:
+  kind: Role
+  name: ibm-helm-api-operator
+  apiGroup: rbac.authorization.k8s.io

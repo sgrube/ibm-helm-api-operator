@@ -1,17 +1,19 @@
-apiVersion: charts.helm.k8s.io/v1alpha1
+apiVersion: operator.ibm.com/v1alpha1
 kind: HelmApi
 metadata:
   name: example-helmapi
 spec:
   # Default values copied from <project_dir>/helm-charts/helm-api/values.yaml
-  
+  # Default values for chart2.
+  # This is a YAML-formatted file.
+  # Declare variables to be passed into your templates
   arch: ""
   auditService:
     config:
       enabled: true
     image:
       pullPolicy: IfNotPresent
-      repository: ibmcom/icp-audit-service
+      repository: quay.io/opencloudio/icp-helm-repo
       tag: 3.3.1
     name: icp-audit-service
   helmapi:
@@ -37,7 +39,7 @@ spec:
     image:
       name: helmapi
       pullPolicy: IfNotPresent
-      repository: ibmcom/icp-helm-api
+      repository: quay.io/opencloudio/icp-helm-api
       tag: 3.3.0
     resources:
       limits:
@@ -79,7 +81,7 @@ spec:
     image:
       name: rudder
       pullPolicy: IfNotPresent
-      repository: ibmcom/icp-helm-rudder
+      repository: quay.io/opencloudio/icp-helm-rudder
       tag: 3.2.2
     ports:
       containerPort: 5000
@@ -113,4 +115,3 @@ spec:
     mongoClientCertSecretName: icp-mongodb-client-cert
     rudderCertsName: rudder-certs
     rudderCertsSecretName: rudder-secret
-  

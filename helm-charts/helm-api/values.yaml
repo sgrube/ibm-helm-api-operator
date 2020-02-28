@@ -4,7 +4,7 @@ auditService:
     enabled: true
   image:
     pullPolicy: IfNotPresent
-    repository: ibmcom/icp-audit-service
+    repository: quay.io/opencloudio/icp-helm-repo
     tag: 3.3.1
   name: icp-audit-service
 helmapi:
@@ -30,7 +30,7 @@ helmapi:
   image:
     name: helmapi
     pullPolicy: IfNotPresent
-    repository: ibmcom/icp-helm-api
+    repository: quay.io/opencloudio/icp-helm-api
     tag: 3.3.0
   resources:
     limits:
@@ -72,7 +72,7 @@ rudder:
   image:
     name: rudder
     pullPolicy: IfNotPresent
-    repository: ibmcom/icp-helm-rudder
+    repository: quay.io/opencloudio/icp-helm-rudder
     tag: 3.2.2
   ports:
     containerPort: 5000

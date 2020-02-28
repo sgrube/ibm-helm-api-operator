@@ -83,7 +83,7 @@ generate-csv: ## Generate CSV
 	@cp deploy/crds/operator.ibm.com_helmapis_crd.yaml deploy/olm-catalog/$(NAMESPACE)/$(CSV_VERSION)/
 
 push-csv: ## Push CSV package to the helm-api
-	@RELEASE=${CSV_VERSION} common/scripts/push-csv.sh
+	@RELEASE=${CSV_VERSION} commonUtil/scripts/push-csv.sh
 
 ############################################################
 # test section

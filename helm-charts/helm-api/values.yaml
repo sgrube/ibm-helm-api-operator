@@ -1,10 +1,9 @@
-arch: ""
 auditService:
   config:
     enabled: true
   image:
     pullPolicy: IfNotPresent
-    repository: quay.io/opencloudio/icp-helm-repo
+    repository: quay.io/opencloudio/icp-audit-service
     tag: 3.3.1
   name: icp-audit-service
 helmapi:
@@ -61,19 +60,18 @@ helmapi:
     mongoCaName: mongodb-ca-cert
     mongoClientCertMountPath: /certs/mongodb-client
     mongoClientCertName: mongodb-client-cert
-nodeSelector:
-  master: "true"
+nodeSelector: {}
 replicaCount: 1
 rudder:
   env:
     RUDDER_CLIENT_CERTS: /etc/certs
-    RUDDER_TILLER_ADDRESS: tiller-deploy.kube-system:44134
+    RUDDER_TILLER_ADDRESS: tiller-deploy:44134
     USE_TLS: "true"
   image:
     name: rudder
     pullPolicy: IfNotPresent
     repository: quay.io/opencloudio/icp-helm-rudder
-    tag: 3.2.2
+    tag: 3.3.0
   ports:
     containerPort: 5000
     containerPortName: p5000
@@ -90,7 +88,6 @@ rudder:
     rudderCacheName: rudder-cache
     rudderCertsMountPath: /etc/certs
     rudderCertsName: rudder-certs
-runAsUser: 65534
 tolerations:
 - effect: NoSchedule
   key: dedicated

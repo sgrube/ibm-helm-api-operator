@@ -6,9 +6,9 @@ metadata:
       [
         {
           "apiVersion": "operator.ibm.com/v1alpha1",
-          "kind": "HelmApi",
+          "kind": "HelmAPI",
           "metadata": {
-            "name": "example-helmapi"
+            "name": "default-helm-api"
           },
           "spec": {
             "arch": "",
@@ -18,7 +18,7 @@ metadata:
               },
               "image": {
                 "pullPolicy": "IfNotPresent",
-                "repository": "quay.io/opencloudio/icp-helm-repo",
+                "repository": "quay.io/opencloudio/icp-audit-service",
                 "tag": "3.3.1"
               },
               "name": "icp-audit-service"
@@ -86,21 +86,19 @@ metadata:
                 "mongoClientCertName": "mongodb-client-cert"
               }
             },
-            "nodeSelector": {
-              "master": "true"
-            },
+            "nodeSelector": {},
             "replicaCount": 1,
             "rudder": {
               "env": {
                 "RUDDER_CLIENT_CERTS": "/etc/certs",
-                "RUDDER_TILLER_ADDRESS": "tiller-deploy.kube-system:44134",
+                "RUDDER_TILLER_ADDRESS": "tiller-deploy:44134",
                 "USE_TLS": "true"
               },
               "image": {
                 "name": "rudder",
                 "pullPolicy": "IfNotPresent",
                 "repository": "quay.io/opencloudio/icp-helm-rudder",
-                "tag": "3.2.2"
+                "tag": "3.3.0"
               },
               "ports": {
                 "containerPort": 5000,
@@ -140,7 +138,7 @@ metadata:
               "helmApiCertsName": "helmapi-certs",
               "helmApiCertsSecretName": "helmapi-secret",
               "mongoCaCertName": "mongodb-ca-cert",
-              "mongoCaCertSecretName": "cluster-ca-cert",
+              "mongoCaCertSecretName": "mongodb-root-ca-cert",
               "mongoClientCertName": "mongodb-client-cert",
               "mongoClientCertSecretName": "icp-mongodb-client-cert",
               "rudderCertsName": "rudder-certs",
@@ -151,20 +149,54 @@ metadata:
       ]
     capabilities: Basic Install
   name: ibm-helm-api-operator.v0.0.1
-  namespace: placeholder
+  namespace: ibm-common-services
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Helmapi CRD for the IBM helm repo chart.
-      displayName: IBM Helm api Operator
-      kind: HelmApi
+    - description: HelmAPI is the Schema for the helmapis API
+      displayName: HelmAPI
+      kind: HelmAPI
       name: helmapis.operator.ibm.com
       version: v1alpha1
-  description: IBM Helm api Operator provides helm repo service
-  displayName: Ibm Helm Api Operator
+  description: Helm API provides a RESTful API service for Helm-Tiller
+  displayName: IBM Helm API Operator
+  icon:
+  - base64data: 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
+    mediatype: image/png
   install:
     spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - certmanager.k8s.io
+          resources:
+          - clusterissuers
+          verbs:
+          - use
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          - rolebindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - hostaccess
+          - privileged
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        serviceAccountName: ibm-helm-api-operator
       deployments:
       - name: ibm-helm-api-operator
         spec:
@@ -200,14 +232,15 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - configmaps
+          - endpoints
+          - events
+          - persistentvolumeclaims
           - pods
+          - secrets
+          - serviceaccounts
           - services
           - services/finalizers
-          - endpoints
-          - persistentvolumeclaims
-          - events
-          - configmaps
-          - secrets
           verbs:
           - create
           - delete
@@ -216,6 +249,25 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
         - apiGroups:
           - apps
           resources:
@@ -232,31 +284,12 @@ spec:
           - update
           - watch
         - apiGroups:
-          - ""
+          - apps
           resources:
-          - namespaces
+          - replicasets
+          - deployments
           verbs:
           - get
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - secrets
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - create
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - servicemonitors
-          verbs:
-          - get
-          - create
         - apiGroups:
           - apps
           resourceNames:
@@ -266,20 +299,38 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - ""
+          - certmanager.k8s.io
           resources:
-          - pods
+          - certificates
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - extensions
+          resources:
+          - ingresses
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
           verbs:
           - get
+          - create
         - apiGroups:
-          - apps
-          resources:
-          - replicasets
-          - deployments
-          verbs:
-          - get
-        - apiGroups:
-          - charts.helm.k8s.io
+          - operator.ibm.com
           resources:
           - '*'
           verbs:
@@ -308,6 +359,7 @@ spec:
   - email: support@ibm.com
     name: IBM Support
   maturity: alpha
+  provider:
     name: IBM
   replaces: ibm-helm-api-operator.v0.0.0
   version: 0.0.1

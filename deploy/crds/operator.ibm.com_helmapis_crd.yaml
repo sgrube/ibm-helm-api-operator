@@ -5,8 +5,8 @@ metadata:
 spec:
   group: operator.ibm.com
   names:
-    kind: HelmApi
-    listKind: HelmApiList
+    kind: HelmAPI
+    listKind: HelmAPIList
     plural: helmapis
     singular: helmapi
   scope: Namespaced

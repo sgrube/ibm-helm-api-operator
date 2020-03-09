@@ -1,19 +1,17 @@
 apiVersion: operator.ibm.com/v1alpha1
-kind: HelmApi
+kind: HelmAPI
 metadata:
-  name: example-helmapi
+  name: default-helm-api
 spec:
   # Default values copied from <project_dir>/helm-charts/helm-api/values.yaml
-  # Default values for chart2.
-  # This is a YAML-formatted file.
-  # Declare variables to be passed into your templates
+
   arch: ""
   auditService:
     config:
       enabled: true
     image:
       pullPolicy: IfNotPresent
-      repository: quay.io/opencloudio/icp-helm-repo
+      repository: quay.io/opencloudio/icp-audit-service
       tag: 3.3.1
     name: icp-audit-service
   helmapi:
@@ -70,19 +68,18 @@ spec:
       mongoCaName: mongodb-ca-cert
       mongoClientCertMountPath: /certs/mongodb-client
       mongoClientCertName: mongodb-client-cert
-  nodeSelector:
-    master: "true"
+  nodeSelector: {}
   replicaCount: 1
   rudder:
     env:
       RUDDER_CLIENT_CERTS: /etc/certs
-      RUDDER_TILLER_ADDRESS: tiller-deploy.kube-system:44134
+      RUDDER_TILLER_ADDRESS: tiller-deploy:44134
       USE_TLS: "true"
     image:
       name: rudder
       pullPolicy: IfNotPresent
       repository: quay.io/opencloudio/icp-helm-rudder
-      tag: 3.2.2
+      tag: 3.3.0
     ports:
       containerPort: 5000
       containerPortName: p5000
@@ -110,8 +107,9 @@ spec:
     helmApiCertsName: helmapi-certs
     helmApiCertsSecretName: helmapi-secret
     mongoCaCertName: mongodb-ca-cert
-    mongoCaCertSecretName: cluster-ca-cert
+    mongoCaCertSecretName: mongodb-root-ca-cert
     mongoClientCertName: mongodb-client-cert
     mongoClientCertSecretName: icp-mongodb-client-cert
     rudderCertsName: rudder-certs
     rudderCertsSecretName: rudder-secret
+  

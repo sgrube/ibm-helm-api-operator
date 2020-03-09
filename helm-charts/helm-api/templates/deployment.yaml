@@ -37,6 +37,7 @@ spec:
         app.kubernetes.io/name: "helm-api"
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
+      serviceAccount: helm-api-sa
       hostNetwork: false
       hostPID: false
       hostIPC: false
@@ -46,7 +47,7 @@ spec:
         runAsUser: {{ .Values.runAsUser }}
         {{- end }} 
       nodeSelector:
-        master: "{{ .Values.nodeSelector.master }}"
+{{ toYaml .Values.nodeSelector | indent 8 }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

@@ -1,8 +1,12 @@
-reviewers:
-- snehahegde7
-- bluzarraga
-- gyliu513
 approvers:
-- snehahegde7
-- bluzarraga
 - gyliu513
+- jchen989
+- cheewaio
+- bitscuit
+- bluzarraga
+reviewers:
+- gyliu513
+- jchen989
+- cheewaio
+- bitscuit
+- bluzarraga

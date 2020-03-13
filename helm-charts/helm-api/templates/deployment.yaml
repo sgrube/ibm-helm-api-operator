@@ -48,19 +48,6 @@ spec:
         {{- end }} 
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                - key: beta.kubernetes.io/arch
-                  operator: In
-                  values:
-                  {{- if .Values.arch }}
-                  - {{ .Values.arch }}
-                  {{- else }}
-                  - {{ template "helmapi.arch" . }}
-                  {{- end }}
       tolerations:
 {{ toYaml .Values.tolerations | indent 8 }}
       containers:

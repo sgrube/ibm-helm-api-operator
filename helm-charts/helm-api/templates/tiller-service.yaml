@@ -1,0 +1,22 @@
+# Licensed Materials - Property of IBM
+# (C) Copyright IBM Corporation 2020. All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication or disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: helm
+    name: tiller
+  name: tiller-deploy
+spec:
+  type: NodePort
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 44134
+    targetPort: 44134
+    nodePort: 31514
+  selector:
+    app: helm
+    name: tiller

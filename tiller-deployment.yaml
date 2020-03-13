@@ -1,0 +1,97 @@
+# Licensed Materials - Property of IBM
+# (C) Copyright IBM Corporation 2020. All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication or disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: helm
+    name: tiller
+  name: tiller-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helm
+      name: tiller
+  template:
+    metadata:
+      labels:
+        app: helm
+        name: tiller
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        seccomp.security.alpha.kubernetes.io/pod: docker/default
+    spec:
+      volumes:
+      - name: tiller-certs
+        secret:
+          secretName: tiller-secret
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: {{ .Values.tiller.name }}
+        image: "{{ .Values.tiller.image.repository }}:{{ .Values.tiller.image.tag }}"
+        imagePullPolicy: {{ .Values.tiller.image.pullPolicy }}
+        volumeMounts:
+        - mountPath: /etc/certs
+          name: tiller-certs
+        resources:
+          {{ toYaml .Values.tiller.resources | indent 10 }}
+        env:
+        - name: IAM_HOST
+          value: "platform-identity-management"
+        - name: IAM_PORT
+          value: "4500"
+        - name: TILLER_HISTORY_MAX
+          value: "5"
+        - name: TILLER_NAMESPACE
+          value: {{ .Release.Namespace }}
+        - name: TILLER_TLS_CERTS
+          value: /etc/certs
+        - name: TILLER_TLS_VERIFY
+          value: "1"
+        - name: TILLER_TLS_ENABLE
+          value: "1"
+        - name: CIPHERSUITES
+          value: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384"
+        - name: default_admin_user
+          value: "{{ .Values.tiller.defaultAdminUser }}"
+        - name: CLUSTER_PORT
+          value: "443"
+        livenessProbe:
+          httpGet:
+            path: "/liveness"
+            port: 44135
+            scheme: HTTP
+          initialDelaySeconds: 1
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: "/readiness"
+            port: 44135
+            scheme: HTTP
+          initialDelaySeconds: 1
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+      tolerations:
+      - key: "dedicated"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1

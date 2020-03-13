@@ -37,7 +37,7 @@ spec:
     image:
       name: helmapi
       pullPolicy: IfNotPresent
-      repository: quay.io/opencloudio/icp-helm-api
+      repository:  quay.io/opencloudio/icp-helm-api
       tag: 3.3.0
     resources:
       limits:
@@ -78,7 +78,7 @@ spec:
     image:
       name: rudder
       pullPolicy: IfNotPresent
-      repository: quay.io/opencloudio/icp-helm-rudder
+      repository:  quay.io/opencloudio/icp-helm-rudder
       tag: 3.3.0
     ports:
       containerPort: 5000
@@ -112,4 +112,18 @@ spec:
     mongoClientCertSecretName: icp-mongodb-client-cert
     rudderCertsName: rudder-certs
     rudderCertsSecretName: rudder-secret
-  
+  tiller:
+    defaultAdminUser: admin
+    certSecret: cs-ca-certificate-secret
+    image:
+      name: tiller
+      pullPolicy: IfNotPresent
+      repository:  quay.io/opencloudio/tiller
+      tag: v2.16.1-icp-3.2.2
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
